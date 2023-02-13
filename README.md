@@ -9,9 +9,11 @@ Helpful for students I worked with
 2. exports a mip of each czi channel
 
 ## To run, something like:
+```
   conda create -n czi2png python=3.10.6
   conda activate czi2png
   pip install -r requirements.txt
+```
 
 ## Updates TBD
 - best ran from a conda venv
