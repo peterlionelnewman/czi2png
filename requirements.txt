@@ -1,0 +1,8 @@
+aicspylibczi==3.0.5
+numpy==1.23.4
+pillow==9.2.0
+matplotlib==3.6.2
+aicsimageio==4.9.2
+aicspylibczi==3.0.5
+attrs==22.2.0
+scipy==1.10.0
