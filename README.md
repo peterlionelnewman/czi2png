@@ -30,7 +30,7 @@ Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu a
 
 i.e.:
 
-![example](./example.png | 200)
+![example](./example.png | width=200)
 
 
 ## Notes
