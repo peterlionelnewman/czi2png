@@ -29,7 +29,8 @@ Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu a
 4. Click 'Converyt 2 png'!
 
 i.e.:
-![example](./example.png)
+
+![example](./example.png | 200)
 
 
 ## Notes
