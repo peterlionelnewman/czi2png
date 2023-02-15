@@ -1,15 +1,16 @@
 #! ~/miniforge3/envs/stl/bin/czi
 
 """
-Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu au)
+Written by: Peter Lionel Harry Newmman, 2023, (p.newman @ sydney edu au)
 
 Helpful for students
-1. searches a folder for .czi files
-2. exports a mip of each czi channel
+1. GUI interface to:
+2. search a folder for .czi files
+3. export mips of various kinds for each czi channel
 
 Go check out the Allen Institue of Cell Science package !!!
 
-This exists because sometimes its buggy. But otherwise we AOK.
+This exists to help students with mip generation, and because of the bugs in the mosaic builder
 
 """
 
@@ -24,19 +25,207 @@ import attr
 import warnings
 from scipy.ndimage import zoom
 from tkinter.filedialog import askdirectory
+import tkinter as tk
 import aicspylibczi
 from matplotlib import pyplot as plt
 
 
-def find_all_czi_in_path(master_path):
+class GUI(tk.Tk):
     """
-    search a given directory for images
+
+    Create a tkinter window to select options:
+
+    - select a folder to search for czi files
+    - select check boxes for:
+        - side projections (w/ side project scaling)
+        - gamma correction
+        - save mip channels
+        - save mip panel
+        - save mip merge
+        - save dye overlaid
+        - save colors
+        - use multiprocessing
+    - select a folder to save the images to
+
     """
-    os.chdir(master_path)
+
+    def __init__(self):
+        # create a tkinter window
+        self.root = tk.Tk()
+        self.root.title(' ')
+
+        # initalize variables
+        self.search_path = tk.StringVar()
+        self.search_path.set('.set/search/path')
+        self.save_path = tk.StringVar()
+        self.save_path.set('.set/save/path')
+
+        # establish a scale factor
+        s = 1.0
+
+        w = int(420 * s)
+        h = int(230 * s)
+
+        # size the window
+        self.root.minsize(w, h)
+        self.root.maxsize(w, h)
+        self.root.geometry(f'{w}x{h}')
+
+        # add a title
+        tk.Label(self.root, text='czi2png', font=('Arial', 25))\
+            .place(relx=10 / w, rely=10 / h) # width=135/w, height=36/h)
+
+        # # add search and save path buttons
+        tk.Button(self.root, text='Search Path', command=self.specify_search_path,
+                  width=8, height=1).place(relx=10 / w, rely=53 / h)
+        tk.Button(self.root, text='Save Path', command=self.specify_save_path,
+                  width=8, height=1).place(relx=10 / w, rely=83 / h)
+
+        self.search_path_label = tk.Label(self.root, textvariable=self.search_path, font=('Arial', 12), fg='gray')\
+            .place(relx=124 / w, rely=58 / h) # width=135/w, height=36/h)
+        self.save_path_label = tk.Label(self.root, textvariable=self.save_path, font=('Arial', 12), fg='gray') \
+            .place(relx=124 / w, rely=88 / h)  # width=135/w, height=36/h)
+
+        # # add a button to run the program
+        tk.Button(self.root, text='Convert 2 png!', command=self.main,
+                  width=20, height=2).place(relx=10 / w, rely=140 / h)
+
+        # # add checkbox to save mip channels, mip panel, mip merge, dye overlaid, colors, multiprocessing
+        tk.Label(self.root, text='Options', font=('Arial', 12)) \
+            .place(relx=260 / w, rely=22 / h)  # width=135/w, height=36/h)
+        self.save_mip_channels = tk.BooleanVar()
+        self.save_mip_channels.set(False)
+        tk.Checkbutton(self.root, text='save mip channels', command = self.display_input,
+                       variable=self.save_mip_channels, onvalue=1, offvalue=0)\
+            .place(relx=260 / w, rely=53 / h)
+
+        self.save_mip_panel = tk.BooleanVar()
+        self.save_mip_panel.set(False)
+        tk.Checkbutton(self.root, text='save mip panel', command = self.display_input,
+                       variable=self.save_mip_panel, onvalue=1, offvalue=0) \
+            .place(relx=260 / w, rely=80 / h)
+
+        self.save_mip_merge = tk.BooleanVar()
+        self.save_mip_merge.set(False)
+        tk.Checkbutton(self.root, text='save mip merge', command = self.display_input,
+                       variable=self.save_mip_merge, onvalue=1, offvalue=0) \
+            .place(relx=260 / w, rely=107 / h)
+
+        self.save_dye_overlaid = tk.BooleanVar()
+        self.save_dye_overlaid.set(False)
+        tk.Checkbutton(self.root, text='save dye overlaid', command = self.display_input,
+                       variable=self.save_dye_overlaid, onvalue=1, offvalue=0) \
+            .place(relx=260 / w, rely=133 / h)
+
+        self.save_colors = tk.BooleanVar()
+        self.save_colors.set(False)
+        tk.Checkbutton(self.root, text='save colors', command = self.display_input,
+                       variable=self.save_colors, onvalue=1, offvalue=0) \
+            .place(relx=260 / w, rely=160 / h)
+
+        self.use_multiprocessing = tk.BooleanVar()
+        self.use_multiprocessing.set(False)
+        tk.Checkbutton(self.root, text='use multiprocessing', command = self.display_input,
+                       variable=self.use_multiprocessing, onvalue=1, offvalue=0) \
+            .place(relx=260 / w, rely=186 / h)
+
+
+        self.root.mainloop()
+
+    # debugging
+    def display_input(self):
+        print(f'search path: {self.search_path}')
+        print(f'save path: {self.save_path}')
+        print(f'save mip channels: {self.save_mip_channels.get()}')
+        print(f'save mip panel: {self.save_mip_panel.get()}')
+        print(f'save mip merge: {self.save_mip_merge.get()}')
+        print(f'save dye overlaid: {self.save_dye_overlaid.get()}')
+        print(f'save colors: {self.save_colors.get()}')
+        print(f'use multiprocessing: {self.use_multiprocessing.get()}')
+
+
+    def specify_search_path(self,):
+        self.search_path.set(tk.filedialog.askdirectory(parent=self.root, initialdir='/',
+                                        title='Please select a directory'))
+
+    def specify_save_path(self,):
+        self.save_path.set(tk.filedialog.askdirectory(parent=self.root, initialdir='/',
+                                        title='Please select a directory'))
+
+
+    def main(self):
+        if self.search_path.get() == '.set/search/path' or self.save_path.get() == '.set/save/path':
+            tk.messagebox.showerror('Python Error', 'please select Search and Save paths * unassigned *')
+            return
+
+        if not os.path.isdir(self.search_path.get()) or not os.path.isdir(self.save_path.get()):
+            tk.messagebox.showerror('Python Error', 'Search and Save paths not directories')
+            return
+
+        # check that at least one save option is selected
+        if self.save_mip_channels.get() + self.save_mip_panel.get() + self.save_mip_merge.get() < 1:
+            tk.messagebox.showerror('Python Error', 'select at least channels, panel or merge image to save')
+            return
+
+        czi_files = find_all_czi_in_path(self.search_path.get())
+        # check that there are czi files in the search path
+        if len(czi_files) == 0:
+            print('no czi files found in search path')
+            return
+
+        czi_file_sizes = [os.path.getsize(czi_file) for czi_file in czi_files]
+        cumulative_file_size = np.cumsum(czi_file_sizes)
+
+        # zip each czi file with processing parameters
+        process_params = zip(czi_files,
+                             [self.save_path.get()] * len(czi_files),
+                             [self.save_mip_channels.get()] * len(czi_files),
+                             [self.save_mip_panel.get()] * len(czi_files),
+                             [self.save_mip_merge.get()] * len(czi_files),
+                             [self.save_dye_overlaid.get()] * len(czi_files),
+                             [self.save_colors.get()] * len(czi_files))
+
+        start_time = time.perf_counter()
+        # run the processing routine on the czi images
+        if not self.use_multiprocessing.get():
+            print(f'running single threaded on: {czi_files}')
+            # time the function
+            # run the processing routine on the czi images
+            for n, process_param in enumerate(process_params):
+                process_file(process_param)
+
+                # calculate time remaining use the files size to estimate processing time
+                time_remaining = (time.perf_counter() - start_time) / \
+                                 cumulative_file_size[n] \
+                                 * (cumulative_file_size[-1] - cumulative_file_size[n])
+
+                                # time taken
+                                # per byte
+                                # * bytes remaining
+
+                print(f'Time remaining: {time_remaining:0.2f} seconds')
+
+        else:
+            print(f'running multi processed: {czi_files}')
+            with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
+                p.map(process_file, process_params)
+
+        # print the run time
+        print(f'\nTime elapsed: {time.perf_counter() - start_time:0.2f} seconds')
+
+        # display a message box to indicate that the processing is complete
+        tk.messagebox.showinfo('Python Info', 'Images saved as png')
+
+
+def find_all_czi_in_path(search_path):
+    """
+    search a given directory for all czis
+    """
+    os.chdir(search_path)
     czi_files = []
-    for root, _, files in os.walk(master_path):
+    for root, _, files in os.walk(search_path):
         for file in files:
-            if file.endswith(".czi") or file.endswith(".CZI"):
+            if file.endswith('.czi') or file.endswith('.CZI'):
                 czi_files.append(os.path.join(root, file))
 
     return czi_files
@@ -173,23 +362,23 @@ class CziImage:
             # warnings.warn('this script throws away this info')
             pass
         if 'V' in dims:
-            # The V-dimension ("view").
-            # warnings.warn('"V" dimension found, not sure what this is')
+            # The V-dimension ('view').
+            # warnings.warn(''V' dimension found, not sure what this is')
             # warnings.warn('this script throws away this info')
             pass
         if 'I' in dims:
-            # The I-dimension ("illumination").
-            # warnings.warn('"I" dimension found, not sure what this is')
+            # The I-dimension ('illumination').
+            # warnings.warn(''I' dimension found, not sure what this is')
             # warnings.warn('this script throws away this info')
             pass
         if 'R' in dims:
-            # The R-dimension ("rotation").
-            # warnings.warn('"R" dimension found, not sure what this is')
+            # The R-dimension ('rotation').
+            # warnings.warn(''R' dimension found, not sure what this is')
             # warnings.warn('this script throws away this info')
             pass
         if 'H' in dims:
-            # The H-dimension ("phase").
-            # warnings.warn('"H" dimension found, not sure what this is')
+            # The H-dimension ('phase').
+            # warnings.warn(''H' dimension found, not sure what this is')
             # warnings.warn('this script throws away this info')
             pass
 
@@ -312,11 +501,17 @@ class CziImage:
 
 
     def save(self,
-             save_mip_channels=False,
-             save_mip_panel=True,
-             save_mip_merge=True,
-             save_dye_overlaid=True,
-             save_colors=True, ):
+             save_path,
+             save_mip_channels,
+             save_mip_panel,
+             save_mip_merge,
+             save_dye_overlaid,
+             save_colors):
+
+        cwd = os.getcwd()
+        os.chdir(save_path)
+
+        file_stem = os.path.splitext(os.path.basename(self.path))[0]
 
         for c in range(self.num_channels):
             # PIL on each channel
@@ -326,6 +521,8 @@ class CziImage:
 
             if save_colors and len(self.colours[c]) > 0:
                 mip = ImageOps.colorize(mip, (0, 0, 0), tuple(self.colours[c]))
+            else:
+                mip = mip.convert('RGB')
 
             if save_dye_overlaid:
                 font_color = tuple(self.colours[c])
@@ -364,11 +561,11 @@ class CziImage:
 
             # save
             if save_mip_channels:
-                mip.save(f'{self.path[:-4]}_ch{c}_.png', optimize=True)
+                mip.save(f'{file_stem[:-4]}_ch{c}_.png', optimize=True)
 
         # save merged and panel images
         if save_mip_merge:
-            mip_merge.save(f'{self.path[:-4]}_ch{c}_merge.png', optimize=True)
+            mip_merge.save(f'{file_stem[:-4]}_ch{c}_merge.png', optimize=True)
 
         if save_mip_panel and self.num_channels > 1:
             # add the merge to the panel if there is space
@@ -381,17 +578,34 @@ class CziImage:
             # remove black space
             mip_panel = mip_panel[~np.all(mip_panel == 0, axis=(1, 2))]
             mip_panel = Image.fromarray(mip_panel.astype('uint8'))
-            mip_panel.save(f'{self.path[:-4]}_ch{c}_panel.png', optimize=True)
+            mip_panel.save(f'{file_stem[:-4]}_ch{c}_panel.png', optimize=True)
 
-        print(f'converted {self.path} and saved')
+        print(f'converted {file_stem} and saved')
+        os.chdir(cwd)
 
 
-def process_file(path):
+def process_file(process_params):
     """
     processes to run on an image path
     """
 
-    print(f'processing {path}')
+    path,\
+    save_path,\
+    save_mip_channels,\
+    save_mip_panel,\
+    save_mip_merge,\
+    save_dye_overlaid,\
+    save_colors = process_params
+
+    print(f'processing path: {path}\n'
+          f'with save path: {save_path}; '
+          f'and save options: \n'
+          f'-   channels: {save_mip_channels}\n'
+          f'-   panel: {save_mip_panel}\n'
+          f'-   merge: {save_mip_merge}\n'
+          f'-   dye overlay: {save_dye_overlaid}\n'
+          f'-   colors: {save_colors}\n')
+
 
     czi = CziImage() # initiate
     # process the image
@@ -400,50 +614,15 @@ def process_file(path):
     czi.extract_colors()
     czi.project_mip(side_projections=True, z_scale=3)
     czi.normalize(gamma=1)
-    czi.save(save_mip_channels=False,
-             save_mip_panel=True,
-             save_mip_merge=True,
-             save_dye_overlaid=True,
-             save_colors=True)
+    czi.save(save_path,
+             save_mip_channels,
+             save_mip_panel,
+             save_mip_merge,
+             save_dye_overlaid,
+             save_colors)
 
 
 if __name__ == '__main__':
-
-    # time the function
-    start_time = time.perf_counter()
-
-    # add path to search for czis
-    master_path = '/Users/peternewman/Desktop/test_images/New-05-1.czi'
-    master_path = askdirectory()
-
-    czi_files = find_all_czi_in_path(master_path)
-    czi_file_sizes = [os.path.getsize(czi_file) for czi_file in czi_files]
-    cumulative_file_size = np.cumsum(czi_file_sizes)
+    gui = GUI()
 
 
-    multi_processed = True
-    # run the processing routine on the czi images
-    if not multi_processed:
-        # run the processing routine on the czi images
-        for n, czi_file in enumerate(czi_files):
-            process_file(czi_file)
-
-            # calculate time remaining use the files size to estimate processing time
-            time_remaining = (time.perf_counter() - start_time) / \
-                             cumulative_file_size[n] \
-                             * (cumulative_file_size[-1] - cumulative_file_size[n])
-
-                            # time taken
-                            # per byte
-                            # * bytes remaining
-
-            print(f'Time remaining: {time_remaining:0.2f} seconds')
-
-    else:
-        with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
-            p.map(process_file, czi_files)
-
-    # print the run time
-    print(f'\nTime elapsed: {time.perf_counter() - start_time:0.2f} seconds')
-
-    print('TBD map all colors to one mega image')
