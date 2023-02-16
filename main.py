@@ -1,7 +1,7 @@
 #! ~/miniforge3/envs/stl/bin/czi
 
 """
-Written by: Peter Lionel Harry Newmman, 2023, (p.newman @ sydney edu au)
+Written by: Peter Lionel Harry Newman, 2023, (p.newman @ sydney edu au)
 
 Helpful for students
 1. GUI interface to:
@@ -561,11 +561,11 @@ class CziImage:
 
             # save
             if save_mip_channels:
-                mip.save(f'{file_stem[:-4]}_ch{c}_.png', optimize=True)
+                mip.save(f'{file_stem}_ch{c}_.png', optimize=True)
 
         # save merged and panel images
         if save_mip_merge:
-            mip_merge.save(f'{file_stem[:-4]}_ch{c}_merge.png', optimize=True)
+            mip_merge.save(f'{file_stem}_ch{c}_merge.png', optimize=True)
 
         if save_mip_panel and self.num_channels > 1:
             # add the merge to the panel if there is space
@@ -578,7 +578,7 @@ class CziImage:
             # remove black space
             mip_panel = mip_panel[~np.all(mip_panel == 0, axis=(1, 2))]
             mip_panel = Image.fromarray(mip_panel.astype('uint8'))
-            mip_panel.save(f'{file_stem[:-4]}_ch{c}_panel.png', optimize=True)
+            mip_panel.save(f'{file_stem}_ch{c}_panel.png', optimize=True)
 
         print(f'converted {file_stem} and saved')
         os.chdir(cwd)
@@ -606,20 +606,27 @@ def process_file(process_params):
           f'-   dye overlay: {save_dye_overlaid}\n'
           f'-   colors: {save_colors}\n')
 
-
-    czi = CziImage() # initiate
-    # process the image
-    if czi.load_czi(path) == 'metadata_only':
+    # catch errors to report to user
+    try:
+        czi = CziImage() # initiate
+        # process the image
+        if czi.load_czi(path) == 'metadata_only':
+            return
+        czi.extract_colors()
+        czi.project_mip(side_projections=True, z_scale=3)
+        czi.normalize(gamma=1)
+        czi.save(save_path,
+                 save_mip_channels,
+                 save_mip_panel,
+                 save_mip_merge,
+                 save_dye_overlaid,
+                 save_colors)
+    except:
+        print(f'failed to process {path}')
+        tk.messagebox.showerror('Python Error',
+            'Failed to process file. Check pyconsole for more information.\n'
+            'might have something to do with multiprocessing an overallocation of memory.')
         return
-    czi.extract_colors()
-    czi.project_mip(side_projections=True, z_scale=3)
-    czi.normalize(gamma=1)
-    czi.save(save_path,
-             save_mip_channels,
-             save_mip_panel,
-             save_mip_merge,
-             save_dye_overlaid,
-             save_colors)
 
 
 if __name__ == '__main__':

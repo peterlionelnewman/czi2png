@@ -13,9 +13,9 @@ Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu a
 ```
     conda create -n czi2png python=3.10.6 pip
     conda activate czi2png
-    pip install -r requirements.txt
     cd <path to czi2png>
-    python czi2png.py 
+    pip install -r requirements.txt
+    python main.py 
 ```
 
 - best ran from a conda venv
@@ -29,8 +29,7 @@ Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu a
 4. Click 'Converyt 2 png'!
 
 i.e.:
-
-![example](./example.png)
+![example.png]
 
 
 ## Notes
