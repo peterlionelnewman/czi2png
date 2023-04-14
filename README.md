@@ -29,7 +29,7 @@ Written by: Pete, 2023, (peterlionelnewman @ gmail com / p.newman @ sydney edu a
 4. Click 'Converyt 2 png'!
 
 i.e.:
-![example.png]
+![example.png](https://github.com/peterlionelnewman/czi2png/blob/main/example.png)
 
 
 ## Notes
