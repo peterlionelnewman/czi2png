@@ -4,7 +4,10 @@ This wrapper GUI + script (around the aicslibczi library) for batch processing /
 
 ## Info
 
-Written by: Pete, 2023, (peterlionelnewman @ gmil com / p.newman 'f@' sydney edu au) Helpful for students I worked with
+- Written by: Pete, 2022, (peterlionelnewman)
+- Paper doi: doi.org/10.1002/advs.202204741
+- Paper url: https://onlinelibrary.wiley.com/doi/10.1002/advs.202204741
+- Cite us if you use any part of this script in anyway :-)
 
 1. searches a folder for .czi files
 2. exports a mip of each czi channel
