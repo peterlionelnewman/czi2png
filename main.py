@@ -621,11 +621,13 @@ def process_file(process_params):
                  save_mip_merge,
                  save_dye_overlaid,
                  save_colors)
-    except:
+    except Exception as e:
         print(f'failed to process {path}')
+        print(f'Error: {str(e)}')
         tk.messagebox.showerror('Python Error',
-            'Failed to process file. Check pyconsole for more information.\n'
-            'might have something to do with multiprocessing an overallocation of memory.')
+            f'Failed to process file:\n{str(e)}\n\n'
+            'Check pyconsole for more information.\n'
+            'Might have something to do with multiprocessing an overallocation of memory.')
         return
 
 
